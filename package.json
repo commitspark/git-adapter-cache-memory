@@ -21,7 +21,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@commitspark/git-adapter": "^0.8.0"
+    "@commitspark/git-adapter": "^0.13.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.10",

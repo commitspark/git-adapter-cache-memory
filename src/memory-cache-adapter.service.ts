@@ -1,7 +1,7 @@
 import {
   Commit,
   CommitDraft,
-  ContentEntry,
+  Entry,
   GitAdapter,
 } from '@commitspark/git-adapter'
 import { MemoryCacheAdapterOptions } from './index'
@@ -9,7 +9,7 @@ import { GitHashValidatorService } from './git-hash-validator.service'
 
 export class MemoryCacheAdapterService implements GitAdapter {
   private gitRepositoryOptions: MemoryCacheAdapterOptions | undefined
-  private contentCache: Record<string, ContentCacheRecord> = {}
+  private entryCache: Record<string, EntryCacheRecord> = {}
   private schemaCache: Record<string, SchemaCacheRecord> = {}
 
   constructor(private gitHashValidator: GitHashValidatorService) {}
@@ -20,7 +20,7 @@ export class MemoryCacheAdapterService implements GitAdapter {
     this.gitRepositoryOptions = repositoryOptions
   }
 
-  public async getContentEntries(commitHash: string): Promise<ContentEntry[]> {
+  public async getEntries(commitHash: string): Promise<Entry[]> {
     if (this.gitRepositoryOptions === undefined) {
       throw new Error('Repository options must be set before reading')
     }
@@ -31,15 +31,15 @@ export class MemoryCacheAdapterService implements GitAdapter {
       )
     }
 
-    const cachedSha = this.contentCache[commitHash] ?? undefined
+    const cachedSha = this.entryCache[commitHash] ?? undefined
     if (cachedSha) {
       return cachedSha.entries
     }
 
     const entries =
-      await this.gitRepositoryOptions.childAdapter.getContentEntries(commitHash)
+      await this.gitRepositoryOptions.childAdapter.getEntries(commitHash)
 
-    this.contentCache[commitHash] = {
+    this.entryCache[commitHash] = {
       entries: entries,
     }
 
@@ -97,8 +97,8 @@ export class MemoryCacheAdapterService implements GitAdapter {
   }
 }
 
-interface ContentCacheRecord {
-  entries: ContentEntry[]
+interface EntryCacheRecord {
+  entries: Entry[]
 }
 
 interface SchemaCacheRecord {
