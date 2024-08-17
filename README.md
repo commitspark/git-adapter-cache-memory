@@ -1,9 +1,9 @@
 # Introduction
 
-**[Commitspark](https://commitspark.com) is a Content Management System based on Git and GraphQL.**
+[Commitspark](https://commitspark.com) is a set of tools to manage structured data with Git through a GraphQL API.
 
 This repository holds code for a GitAdapter that implements in-memory caching of data returned by a wrapped child
-GitAdapter for calls to `getContentEntries()` and `getSchema()`. Calls to `getLatestCommitHash()` are not cached by
+GitAdapter for calls to `getEntries()` and `getSchema()`. Calls to `getLatestCommitHash()` are not cached by
 default but users can provide their own implementation to also cache responses to this call according to their own
 caching strategy. Calls to `createCommit()` are never cached and always forwarded to the child adapter.
 
