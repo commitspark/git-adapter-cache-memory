@@ -1,7 +1,12 @@
 import { mock } from 'jest-mock-extended'
 import { MemoryCacheAdapterOptions, MemoryCacheAdapterService } from '../../src'
 import { GitHashValidatorService } from '../../src/git-hash-validator.service'
-import { Commit, ContentEntry, GitAdapter } from '@commitspark/git-adapter'
+import {
+  Commit,
+  CommitDraft,
+  Entry,
+  GitAdapter,
+} from '@commitspark/git-adapter'
 
 describe('MemoryCacheAdapter', () => {
   describe('getContentEntries', () => {
@@ -9,9 +14,7 @@ describe('MemoryCacheAdapter', () => {
       const gitHashValidator = mock<GitHashValidatorService>()
 
       const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await expect(() =>
-        cacheAdapter.getContentEntries('abc'),
-      ).rejects.toThrow()
+      await expect(() => cacheAdapter.getEntries('abc')).rejects.toThrow()
     })
 
     it('should fail when argument is not a commit hash', async () => {
@@ -26,9 +29,7 @@ describe('MemoryCacheAdapter', () => {
 
       gitHashValidator.hasHashFormat.calledWith(notAHash).mockReturnValue(false)
 
-      await expect(() =>
-        cacheAdapter.getContentEntries(notAHash),
-      ).rejects.toThrow()
+      await expect(() => cacheAdapter.getEntries(notAHash)).rejects.toThrow()
       expect(gitHashValidator.hasHashFormat).toHaveBeenCalled()
     })
 
@@ -41,19 +42,17 @@ describe('MemoryCacheAdapter', () => {
       await cacheAdapter.setRepositoryOptions(adapterOptions)
 
       const isAHash = 'abcd'
-      const queryResult: ContentEntry[] = [
+      const queryResult: Entry[] = [
         { id: '1', data: {}, metadata: { type: 'MyType' } },
       ]
 
       gitHashValidator.hasHashFormat.calledWith(isAHash).mockReturnValue(true)
 
-      childAdapter.getContentEntries
-        .calledWith(isAHash)
-        .mockResolvedValue(queryResult)
+      childAdapter.getEntries.calledWith(isAHash).mockResolvedValue(queryResult)
 
-      const result = await cacheAdapter.getContentEntries(isAHash)
+      const result = await cacheAdapter.getEntries(isAHash)
 
-      expect(childAdapter.getContentEntries).toHaveBeenCalled()
+      expect(childAdapter.getEntries).toHaveBeenCalled()
       expect(result).toBe(queryResult)
     })
 
@@ -66,20 +65,18 @@ describe('MemoryCacheAdapter', () => {
       await cacheAdapter.setRepositoryOptions(adapterOptions)
 
       const isAHash = 'abcd'
-      const queryResult: ContentEntry[] = [
+      const queryResult: Entry[] = [
         { id: '1', data: {}, metadata: { type: 'MyType' } },
       ]
 
       gitHashValidator.hasHashFormat.calledWith(isAHash).mockReturnValue(true)
 
-      childAdapter.getContentEntries
-        .calledWith(isAHash)
-        .mockResolvedValue(queryResult)
+      childAdapter.getEntries.calledWith(isAHash).mockResolvedValue(queryResult)
 
-      const result1 = await cacheAdapter.getContentEntries(isAHash)
-      const result2 = await cacheAdapter.getContentEntries(isAHash)
+      const result1 = await cacheAdapter.getEntries(isAHash)
+      const result2 = await cacheAdapter.getEntries(isAHash)
 
-      expect(childAdapter.getContentEntries).toHaveBeenCalledTimes(1)
+      expect(childAdapter.getEntries).toHaveBeenCalledTimes(1)
       expect(result1).toBe(queryResult)
       expect(result2).toBe(queryResult)
     })
@@ -90,9 +87,7 @@ describe('MemoryCacheAdapter', () => {
       const gitHashValidator = mock<GitHashValidatorService>()
 
       const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await expect(() =>
-        cacheAdapter.getContentEntries('abc'),
-      ).rejects.toThrow()
+      await expect(() => cacheAdapter.getEntries('abc')).rejects.toThrow()
     })
 
     it('should fail when argument is not a commit hash', async () => {
@@ -161,9 +156,7 @@ describe('MemoryCacheAdapter', () => {
       const gitHashValidator = mock<GitHashValidatorService>()
 
       const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await expect(() =>
-        cacheAdapter.getContentEntries('abc'),
-      ).rejects.toThrow()
+      await expect(() => cacheAdapter.getEntries('abc')).rejects.toThrow()
     })
 
     it('should return argument when argument is already a commit hash', async () => {
@@ -245,7 +238,7 @@ describe('MemoryCacheAdapter', () => {
           ref: 'myBranch',
           message: 'My message',
           parentSha: 'parentSha',
-          contentEntries: [],
+          entries: [],
         }),
       ).rejects.toThrow()
     })
@@ -258,11 +251,11 @@ describe('MemoryCacheAdapter', () => {
       const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
       await cacheAdapter.setRepositoryOptions(adapterOptions)
 
-      const commitDraft = {
+      const commitDraft: CommitDraft = {
         ref: 'myBranch',
         message: 'My message',
         parentSha: 'parentSha',
-        contentEntries: [],
+        entries: [],
       }
       const commit: Commit = {
         ref: 'newSha',
