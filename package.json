@@ -29,7 +29,8 @@
     "build:types": "tsc --project tsconfig.build.types.json",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,tests}/**/*.ts\"",
-    "test": "jest"
+    "test": "jest",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@commitspark/git-adapter": "^0.13.0"
