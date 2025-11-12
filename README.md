@@ -10,6 +10,12 @@ caching strategy to also cache retrieval of latest commit hashes for a ref.
 
 Calls to `createCommit()` are never cached and always forwarded to the child adapter.
 
+# Installation
+
+```shell
+npm i @commitspark/git-adapter-cache-memory
+```
+
 # Usage
 
 Create an adapter with `createAdapter()` and the following options:
