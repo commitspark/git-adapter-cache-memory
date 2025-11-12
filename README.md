@@ -5,8 +5,8 @@
 This repository holds code for a GitAdapter that implements in-memory caching of data returned by a wrapped child
 GitAdapter for calls to `getEntries()` and `getSchema()`.
 
-Calls to `getLatestCommitHash()` are not cached by default but can provide your own implementation with a custom caching
-strategy to also cache retrieval of latest commit hashes for a ref.
+Calls to `getLatestCommitHash()` are not cached by default, but you can provide your own implementation with a custom
+caching strategy to also cache retrieval of latest commit hashes for a ref.
 
 Calls to `createCommit()` are never cached and always forwarded to the child adapter.
 
