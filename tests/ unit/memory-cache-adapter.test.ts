@@ -1,6 +1,6 @@
 import { mock } from 'jest-mock-extended'
-import { MemoryCacheAdapterOptions, MemoryCacheAdapterService } from '../../src'
-import { GitHashValidatorService } from '../../src/git-hash-validator.service'
+import { createAdapter, MemoryCacheAdapterOptions } from '../../src'
+import { hasHashFormat } from '../../src/git-hash-validator'
 import {
   Commit,
   CommitDraft,
@@ -8,73 +8,69 @@ import {
   GitAdapter,
 } from '@commitspark/git-adapter'
 
+jest.mock('../../src/git-hash-validator', () => ({
+  hasHashFormat: jest.fn(),
+}))
+
+const mockedHasHashFormat = hasHashFormat as jest.MockedFunction<
+  typeof hasHashFormat
+>
+
 describe('MemoryCacheAdapter', () => {
+  beforeEach(() => {
+    jest.resetAllMocks()
+  })
+  const makeAdapter = (childAdapter?: GitAdapter) => {
+    const adapterOptions = {
+      childAdapter: childAdapter ?? mock<GitAdapter>(),
+    } as MemoryCacheAdapterOptions
+    return createAdapter(adapterOptions)
+  }
+
   describe('getContentEntries', () => {
-    it('should fail when no adapter options are set', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
-
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await expect(() => cacheAdapter.getEntries('abc')).rejects.toThrow()
-    })
-
     it('should fail when argument is not a commit hash', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
-      const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter()
 
       const notAHash = 'notAHash'
 
-      gitHashValidator.hasHashFormat.calledWith(notAHash).mockReturnValue(false)
+      mockedHasHashFormat.mockReturnValue(false)
 
-      await expect(() => cacheAdapter.getEntries(notAHash)).rejects.toThrow()
-      expect(gitHashValidator.hasHashFormat).toHaveBeenCalled()
+      await expect(() => adapter.getEntries(notAHash)).rejects.toThrow()
+      expect(mockedHasHashFormat).toHaveBeenCalled()
     })
 
     it('should query child adapter on cache miss', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter(childAdapter)
 
       const isAHash = 'abcd'
       const queryResult: Entry[] = [
         { id: '1', data: {}, metadata: { type: 'MyType' } },
       ]
 
-      gitHashValidator.hasHashFormat.calledWith(isAHash).mockReturnValue(true)
-
+      mockedHasHashFormat.mockReturnValue(true)
       childAdapter.getEntries.calledWith(isAHash).mockResolvedValue(queryResult)
 
-      const result = await cacheAdapter.getEntries(isAHash)
+      const result = await adapter.getEntries(isAHash)
 
       expect(childAdapter.getEntries).toHaveBeenCalled()
       expect(result).toBe(queryResult)
     })
 
     it('should query child adapter once on subsequent queries', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter(childAdapter)
 
       const isAHash = 'abcd'
       const queryResult: Entry[] = [
         { id: '1', data: {}, metadata: { type: 'MyType' } },
       ]
 
-      gitHashValidator.hasHashFormat.calledWith(isAHash).mockReturnValue(true)
-
+      mockedHasHashFormat.mockReturnValue(true)
       childAdapter.getEntries.calledWith(isAHash).mockResolvedValue(queryResult)
 
-      const result1 = await cacheAdapter.getEntries(isAHash)
-      const result2 = await cacheAdapter.getEntries(isAHash)
+      const result1 = await adapter.getEntries(isAHash)
+      const result2 = await adapter.getEntries(isAHash)
 
       expect(childAdapter.getEntries).toHaveBeenCalledTimes(1)
       expect(result1).toBe(queryResult)
@@ -83,67 +79,45 @@ describe('MemoryCacheAdapter', () => {
   })
 
   describe('getSchema', () => {
-    it('should fail when no adapter options are set', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
-
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await expect(() => cacheAdapter.getEntries('abc')).rejects.toThrow()
-    })
-
     it('should fail when argument is not a commit hash', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter(childAdapter)
 
       const notAHash = 'notAHash'
+      mockedHasHashFormat.mockReturnValue(false)
 
-      gitHashValidator.hasHashFormat.calledWith(notAHash).mockReturnValue(false)
-
-      await expect(() => cacheAdapter.getSchema(notAHash)).rejects.toThrow()
-      expect(gitHashValidator.hasHashFormat).toHaveBeenCalled()
+      await expect(() => adapter.getSchema(notAHash)).rejects.toThrow()
+      expect(mockedHasHashFormat).toHaveBeenCalled()
     })
 
     it('should query child adapter on cache miss', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter(childAdapter)
 
       const isAHash = 'abcd'
       const queryResult: string = 'schema'
 
-      gitHashValidator.hasHashFormat.calledWith(isAHash).mockReturnValue(true)
-
+      mockedHasHashFormat.mockReturnValue(true)
       childAdapter.getSchema.calledWith(isAHash).mockResolvedValue(queryResult)
 
-      const result = await cacheAdapter.getSchema(isAHash)
+      const result = await adapter.getSchema(isAHash)
 
       expect(childAdapter.getSchema).toHaveBeenCalled()
       expect(result).toBe(queryResult)
     })
 
     it('should query child adapter once on subsequent queries', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter(childAdapter)
 
       const isAHash = 'abcd'
       const queryResult: string = 'schema'
 
-      gitHashValidator.hasHashFormat.calledWith(isAHash).mockReturnValue(true)
-
+      mockedHasHashFormat.mockReturnValue(true)
       childAdapter.getSchema.calledWith(isAHash).mockResolvedValue(queryResult)
 
-      const result1 = await cacheAdapter.getSchema(isAHash)
-      const result2 = await cacheAdapter.getSchema(isAHash)
+      const result1 = await adapter.getSchema(isAHash)
+      const result2 = await adapter.getSchema(isAHash)
 
       expect(childAdapter.getSchema).toHaveBeenCalledTimes(1)
       expect(result1).toBe(queryResult)
@@ -152,76 +126,52 @@ describe('MemoryCacheAdapter', () => {
   })
 
   describe('getLatestCommitHash', () => {
-    it('should fail when no adapter options are set', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
-
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await expect(() => cacheAdapter.getEntries('abc')).rejects.toThrow()
-    })
-
     it('should return argument when argument is already a commit hash', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter(childAdapter)
 
       const isAHash = 'isAHash'
+      mockedHasHashFormat.mockReturnValue(true)
 
-      gitHashValidator.hasHashFormat.calledWith(isAHash).mockReturnValue(true)
-
-      const result = await cacheAdapter.getLatestCommitHash(isAHash)
-      expect(gitHashValidator.hasHashFormat).toHaveBeenCalled()
+      const result = await adapter.getLatestCommitHash(isAHash)
+      expect(mockedHasHashFormat).toHaveBeenCalled()
       expect(childAdapter.getLatestCommitHash).toHaveBeenCalledTimes(0)
       expect(result).toBe(isAHash)
     })
 
     it('should query the custom hash retrieval function when provided', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
       const myHash = 'myHash'
-      const customGetLatestCommitHash = (_: string): Promise<string> => {
-        return new Promise((resolve) => {
-          resolve(myHash)
-        })
-      }
 
-      const adapterOptions = {
+      const customGetLatestCommitHash = jest.fn().mockResolvedValue(myHash)
+
+      const adapter = createAdapter({
         childAdapter,
         getLatestCommitHash: customGetLatestCommitHash,
-      } as MemoryCacheAdapterOptions
+      })
 
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      mockedHasHashFormat.mockReturnValue(false)
 
-      gitHashValidator.hasHashFormat.calledWith(myHash).mockReturnValue(false)
-
-      const result = await cacheAdapter.getLatestCommitHash(myHash)
+      const result = await adapter.getLatestCommitHash(myHash)
 
       expect(childAdapter.getLatestCommitHash).toHaveBeenCalledTimes(0)
       expect(result).toBe(myHash)
     })
 
     it('should query the child adapter when no custom hash retrieval function is provided', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter(childAdapter)
 
       const notAHash = 'notAHash'
       const latestHash: string = 'latestHash'
 
-      gitHashValidator.hasHashFormat.calledWith(notAHash).mockReturnValue(false)
+      mockedHasHashFormat.mockReturnValue(false)
 
       childAdapter.getLatestCommitHash
         .calledWith(notAHash)
         .mockResolvedValue(latestHash)
 
-      const result = await cacheAdapter.getLatestCommitHash(notAHash)
+      const result = await adapter.getLatestCommitHash(notAHash)
 
       expect(childAdapter.getLatestCommitHash).toHaveBeenCalledTimes(1)
       expect(result).toBe(latestHash)
@@ -229,27 +179,9 @@ describe('MemoryCacheAdapter', () => {
   })
 
   describe('createCommit', () => {
-    it('should fail when no adapter options are set', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
-
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await expect(() =>
-        cacheAdapter.createCommit({
-          ref: 'myBranch',
-          message: 'My message',
-          parentSha: 'parentSha',
-          entries: [],
-        }),
-      ).rejects.toThrow()
-    })
-
     it('should forward calls to the child adapter', async () => {
-      const gitHashValidator = mock<GitHashValidatorService>()
       const childAdapter = mock<GitAdapter>()
-
-      const adapterOptions = { childAdapter } as MemoryCacheAdapterOptions
-      const cacheAdapter = new MemoryCacheAdapterService(gitHashValidator)
-      await cacheAdapter.setRepositoryOptions(adapterOptions)
+      const adapter = makeAdapter(childAdapter)
 
       const commitDraft: CommitDraft = {
         ref: 'myBranch',
@@ -265,7 +197,7 @@ describe('MemoryCacheAdapter', () => {
         .calledWith(commitDraft)
         .mockResolvedValue(commit)
 
-      const result = await cacheAdapter.createCommit(commitDraft)
+      const result = await adapter.createCommit(commitDraft)
 
       expect(result).toBe(commit)
     })
