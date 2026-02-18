@@ -11,7 +11,7 @@ import {
   getLatestCommitHash,
   getSchema,
   SchemaCacheRecord,
-} from './memory-cache-adapter'
+} from './memory-cache-adapter.ts'
 
 export interface MemoryCacheAdapterOptions {
   childAdapter: GitAdapter

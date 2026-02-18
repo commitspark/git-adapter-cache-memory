@@ -1,6 +1,6 @@
 import { Commit, CommitDraft, Entry } from '@commitspark/git-adapter'
-import { MemoryCacheAdapterOptions } from './index'
-import { hasHashFormat } from './git-hash-validator'
+import { MemoryCacheAdapterOptions } from './index.ts'
+import { hasHashFormat } from './git-hash-validator.ts'
 
 export interface EntryCacheRecord {
   entries: Entry[]
