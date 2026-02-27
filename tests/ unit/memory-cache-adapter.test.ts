@@ -190,7 +190,7 @@ describe('MemoryCacheAdapter', () => {
         entries: [],
       }
       const commit: Commit = {
-        ref: 'newSha',
+        commitHash: 'newSha',
       }
 
       childAdapter.createCommit
